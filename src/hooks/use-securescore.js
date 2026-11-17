@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { ApiGetCall } from '../api/ApiCall'
 import { useSettings } from './use-settings'
 import { getStandards } from '../utils/standards-data'
+import { isMultiTenant } from '../utils/tenant-selection'
 
 export function useSecureScore({ waiting = true } = {}) {
   const currentTenant = useSettings().currentTenant
-  const isAllTenants = currentTenant === 'AllTenants'
+  const isAllTenants = isMultiTenant(currentTenant)
 
   const [translatedData, setTranslatedData] = useState([])
   const [isSuccess, setIsSuccess] = useState(false)
@@ -77,8 +78,18 @@ export function useSecureScore({ waiting = true } = {}) {
         const remediation = getStandards().find((standard) =>
           standard.tag?.includes(control.controlName)
         )
+        // maxScore lives on the control profile, not on the per-tenant control score.
+        const pointsToGain =
+          translation?.maxScore != null
+            ? Math.max(translation.maxScore - (control.score ?? 0), 0)
+            : null
         return {
           ...control,
+          pointsToGain,
+          percentToGain:
+            pointsToGain != null && secureScoreData.maxScore
+              ? (pointsToGain / secureScoreData.maxScore) * 100
+              : null,
           title: translation?.title,
           threats: translation?.threats,
           complianceInformation: translation?.complianceInformation,
@@ -102,15 +113,14 @@ export function useSecureScore({ waiting = true } = {}) {
       setTranslatedData({
         ...secureScoreData,
         //secureScoreData.currentscore is the current score, secureScoreData.maxscore is the max score. calculate % reached.
-        percentageCurrent: Math.round(
-          (secureScoreData.currentScore / secureScoreData.maxScore) * 100
-        ),
-        percentageVsAllTenants: Math.round(
-          secureScoreData.averageComparativeScores?.[0]?.averageScore
-        ),
-        percentageVsSimilar: Math.round(
-          secureScoreData.averageComparativeScores?.[1]?.averageScore
-        ),
+        percentageCurrent: (
+          (secureScoreData.currentScore / secureScoreData.maxScore) *
+          100
+        ).toFixed(2),
+        percentageVsAllTenants:
+          secureScoreData.averageComparativeScores?.[0]?.averageScore?.toFixed(2),
+        percentageVsSimilar:
+          secureScoreData.averageComparativeScores?.[1]?.averageScore?.toFixed(2),
         controlScores: updatedControlScores,
       })
       setIsSuccess(true)

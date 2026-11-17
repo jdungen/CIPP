@@ -213,6 +213,31 @@ const CippAddEditUser = (props) => {
     AddToGroups: watcher[3],
   }
 
+  // On edit, an empty licence box posts the same payload as "no licence change", which the
+  // backend skips. Clearing the last licence therefore switches on Remove all licenses.
+  const [licensesValue, removeLicensesValue] = useWatch({
+    control: formControl.control,
+    name: ['licenses', 'removeLicenses'],
+  })
+  const originalLicenseCount =
+    formControl.formState.defaultValues?.licenses?.length ?? 0
+  const hasLicenses = Array.isArray(licensesValue)
+    ? licensesValue.length > 0
+    : Boolean(licensesValue)
+  const lastLicenseCleared =
+    formType === 'edit' && originalLicenseCount > 0 && !hasLicenses
+  const autoRemoveLicensesRef = useRef(false)
+  useEffect(() => {
+    if (lastLicenseCleared && !autoRemoveLicensesRef.current) {
+      autoRemoveLicensesRef.current = true
+      formControl.setValue('removeLicenses', true, { shouldDirty: true })
+    } else if (!lastLicenseCleared && autoRemoveLicensesRef.current) {
+      // Only undo our own switch, so a licence added back is not stripped on submit.
+      autoRemoveLicensesRef.current = false
+      formControl.setValue('removeLicenses', false)
+    }
+  }, [lastLicenseCleared])
+
   // Duplicate-username warning. The Users table already pulled the tenant's user list into the
   // tanstack cache when it loaded, so this reads that cache and makes no API request. The entry
   // is an infinite query (the table pages through nextLinks), so every page must be flattened -
@@ -289,7 +314,10 @@ const CippAddEditUser = (props) => {
           displayName += selectedTemplate.displayName
         }
 
-        formControl.setValue('displayName', displayName, { shouldDirty: true })
+        formControl.setValue('displayName', displayName, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
       }
 
       // Auto-generate username if template has usernameFormat
@@ -326,6 +354,7 @@ const CippAddEditUser = (props) => {
           if (generatedUsername) {
             formControl.setValue('username', generatedUsername, {
               shouldDirty: true,
+              shouldValidate: true,
             })
           }
         }
@@ -414,9 +443,15 @@ const CippAddEditUser = (props) => {
         ? value.length > 0
         : value !== undefined && value !== null && value !== ''
       if (hasValue) {
-        formControl.setValue(fieldName, value, { shouldDirty: true })
+        formControl.setValue(fieldName, value, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
       } else if (isSwitch) {
-        formControl.setValue(fieldName, emptyValue, { shouldDirty: true })
+        formControl.setValue(fieldName, emptyValue, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
       }
     }
 
@@ -859,6 +894,20 @@ const CippAddEditUser = (props) => {
           formControl={formControl}
         />
       </Grid>
+      {lastLicenseCleared && (
+        <Grid size={{ xs: 12 }}>
+          {removeLicensesValue ? (
+            <Alert severity="warning">
+              All licenses will be removed from this user when you submit.
+            </Alert>
+          ) : (
+            <Alert severity="info">
+              Licenses will not be changed. Turn on Remove all licenses to take
+              the last license off this user.
+            </Alert>
+          )}
+        </Grid>
+      )}
       <Grid size={{ xs: 12 }}>
         <CippFormComponent
           type="textField"

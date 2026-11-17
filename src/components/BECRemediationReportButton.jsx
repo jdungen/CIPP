@@ -15,6 +15,7 @@ import {
   IconButton,
 } from '@mui/material'
 import { useSettings } from '../hooks/use-settings'
+import { useBrandingSettings } from './CippPdf/useBrandingSettings'
 import { ServerPdfPane, useServerPdf } from './CippPdf/useServerPdf'
 
 // The report PDF is rendered server-side (ExecGetBecReportPdf) by the shared CIPPSharp component kit,
@@ -26,6 +27,7 @@ export const BECRemediationReportButton = ({ userData, becData, tenantName }) =>
   // 'full' = the complete report; 'summary' = the executive pages only, for a C-suite reader.
   const [variant, setVariant] = useState('full')
   const tenantFilter = useSettings().currentTenant
+  const branding = useBrandingSettings()
 
   // Only offer the report once the BEC analysis has completed (its result is what the server reads).
   const hasData = userData && becData && !becData.Waiting
@@ -37,6 +39,10 @@ export const BECRemediationReportButton = ({ userData, becData, tenantName }) =>
     userName: userData?.userPrincipalName ?? '',
     userDisplayName: userData?.displayName ?? '',
     variant,
+    brandingPresetId:
+      branding?.reportDefaults?.[
+        variant === 'summary' ? 'becSummary' : 'bec'
+      ] ?? '',
   })
   const pdf = useServerPdf({ url: `/api/ExecGetBecReportPdf?${params}`, enabled: dialogOpen })
   const handleOpenDialog = () => setDialogOpen(true)
@@ -84,7 +90,7 @@ export const BECRemediationReportButton = ({ userData, becData, tenantName }) =>
             <Typography variant="h6" component="div">
               BEC Remediation Report Preview
             </Typography>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <ToggleButtonGroup
                 size="small"
                 exclusive

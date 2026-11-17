@@ -8,6 +8,7 @@ import {
   SAMPLE_MAIL_FLOW,
   SAMPLE_PERMISSIONS,
   SAMPLE_SHARING,
+  SAMPLE_STORAGE,
   SAMPLE_TENANT_NAME,
 } from "../CippPdf/previewSampleData";
 
@@ -148,6 +149,19 @@ export const REPORT_COVER_PRESETS = [
     footer: "Confidential — For Internal Use Only",
   },
   {
+    id: "storage",
+    label: "Storage Report",
+    reportName: "Storage Report",
+    coverLabel: "Storage Review",
+    title: "Storage",
+    accent: "Report",
+    subtitle:
+      "Where SharePoint and OneDrive storage is used, how much of it is old file versions, and what can be reclaimed.",
+    metaPrimary: SAMPLE_TENANT_NAME,
+    metaSecondary: `${SAMPLE_STORAGE.sharePointGb}.00 GB SharePoint · ${SAMPLE_STORAGE.teamsGb}.00 GB Teams · ${SAMPLE_STORAGE.oneDriveGb}.00 GB OneDrive`,
+    footer: "Confidential — For Internal Use Only",
+  },
+  {
     id: "licensing",
     label: "Licensing Report",
     reportName: "Licensing Report",
@@ -174,6 +188,18 @@ export const REPORT_COVER_PRESETS = [
     metaPrimary: SAMPLE_TENANT_NAME,
     metaSecondary: null,
     footer: "Confidential & Proprietary",
+  },
+  {
+    id: "domain",
+    label: "Domain Security Report",
+    reportName: "Domain Security Assessment",
+    coverLabel: "Domain Security Assessment",
+    title: "Domain Security",
+    accent: "Assessment",
+    subtitle: "Email security and DNS health across every domain.",
+    metaPrimary: SAMPLE_TENANT_NAME,
+    metaSecondary: null,
+    footer: "Point-in-time assessment of public DNS records",
   },
   {
     // Last: this one has no fixed content of its own — it renders whatever an operator assembles in

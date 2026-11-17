@@ -137,6 +137,29 @@ export const BEC_ATTACKER_VERDICTS = [
 ]
 const isAttackerIp = (verdict) =>
   verdict === 'Compromised' || verdict === 'LikelyAttacker'
+const IP_VERDICT_COLUMNS = [
+  'IP',
+  'Verdict',
+  'Score',
+  'ReasonText',
+  'Source',
+  'Country',
+  'City',
+  'ASN',
+  'ASName',
+  'Org',
+  'Hosting',
+  'Proxy',
+  'SuccessfulSignIns',
+  'NonInteractiveSignIns',
+  'FailedSignIns',
+  'Activities',
+  'BaselineShare',
+  'OtherUsersBefore',
+  'OtherUsersInWindowOnly',
+  'FirstSeen',
+  'LastSeen',
+]
 
 export const BEC_GROUPS = [
   {
@@ -149,24 +172,20 @@ export const BEC_GROUPS = [
       {
         key: 'IPVerdicts',
         title: 'IP addresses behind this case',
-        columns: [
-          'IP',
-          'Verdict',
-          'Score',
-          'ReasonText',
-          'Source',
-          'Country',
-          'City',
-          'ASName',
-          'SuccessfulSignIns',
-          'NonInteractiveSignIns',
-          'FailedSignIns',
-          'Activities',
-          'BaselineShare',
-          'OtherUsersBefore',
-          'OtherUsersInWindowOnly',
-          'FirstSeen',
-          'LastSeen',
+        rows: (b) =>
+          arr(b.IPVerdicts).filter((v) =>
+            BEC_ATTACKER_VERDICTS.includes(v.Verdict)
+          ),
+        columns: IP_VERDICT_COLUMNS,
+        sections: [
+          {
+            title: "Addresses judged the user's, safe or a service",
+            rows: (b) =>
+              arr(b.IPVerdicts).filter(
+                (v) => !BEC_ATTACKER_VERDICTS.includes(v.Verdict)
+              ),
+            columns: IP_VERDICT_COLUMNS,
+          },
         ],
         summary: (b) => {
           const rows = arr(b.IPVerdicts)
@@ -1021,6 +1040,23 @@ export const becSkippedChecks = (becData) =>
   Object.entries(becData?.Completeness || {})
     .filter(([, m]) => m && m.Skipped)
     .map(([name, m]) => ({ name, requirement: m.Requirement }))
+
+// How far back a run looks, picked before it starts. Every window ends now; the backend refuses more
+// than BEC_WINDOW_MAX_DAYS (the longest the Entra sign-in log keeps). The empty value leaves the
+// choice to the run: 7 days, or 30 for a user licensed for Entra ID P1/P2.
+export const BEC_WINDOW_MAX_DAYS = 30
+export const BEC_WINDOW_OPTIONS = [
+  { label: 'Automatic (7 days, or 30 with Entra ID P1/P2)', value: '' },
+  { label: 'Last 24 hours', value: 1 },
+  { label: 'Last 3 days', value: 3 },
+  { label: 'Last 7 days', value: 7 },
+  { label: 'Last 14 days', value: 14 },
+  { label: 'Last 30 days', value: 30 },
+]
+// The option for a chosen window (a number of days, or anything empty for automatic).
+export const becWindowOption = (windowDays) =>
+  BEC_WINDOW_OPTIONS.find((o) => o.value === (Number(windowDays) || '')) ??
+  BEC_WINDOW_OPTIONS[0]
 
 // Start of the analysis window: windowDays before the run was extracted (now, for a run without a date).
 export const becWindowStart = (becData, windowDays = 7) => {
